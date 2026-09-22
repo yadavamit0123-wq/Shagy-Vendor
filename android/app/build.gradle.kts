@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.sixamtech.sixam_mart_store_app"
+    namespace = "com.pt.shagymartstore"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -30,11 +30,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.sixamtech.sixam_mart_store_app"
+        applicationId = "com.pt.shagymartstore"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 4
+        versionName = "1.0.6"
         multiDexEnabled = true
     }
 
@@ -49,7 +49,7 @@ android {
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("debug") // or "release" if you have real keystore
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
