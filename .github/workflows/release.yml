@@ -1,0 +1,73 @@
+# Push to main → release APK + AAB (artifacts, 30 days).
+# Required repo secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+# ANDROID_KEY_PASSWORD, ANDROID_KEY_ALIAS
+
+name: Release build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android APK & AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Configure Android signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Missing ANDROID_KEYSTORE_BASE64 (and other signing secrets)."
+            exit 1
+          fi
+          mkdir -p android/app
+          echo "$KEYSTORE_B64" | base64 -d > android/app/prt.jks
+          cat > android/key.properties <<EOF
+          storePassword=${STORE_PASSWORD}
+          keyPassword=${KEY_PASSWORD}
+          keyAlias=${KEY_ALIAS}
+          storeFile=prt.jks
+          EOF
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: shagy-vendor-android
+          retention-days: 30
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
